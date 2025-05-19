@@ -37,38 +37,111 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: SingleChildScrollView(
+//         controller: scrollController,
+//         child: Column(
+//           children: [
+//             Navbar(
+//   onLinkTap: (section) {
+//     final lower = section.toLowerCase();
+//     switch (lower) {
+//       case 'donate':
+//         scrollTo(donationFormKey);
+//         break;
+//       case 'fundraiser':
+//         scrollTo(fundraiserKey);
+//         break;
+//       case 'testimonials':
+//         scrollTo(testimonialsKey);
+//         break;
+//       case 'blogs':
+//         scrollTo(blogKey);
+//         break;
+//       case 'about us':
+//         scrollTo(aboutKey);
+//         break;
+//     }
+//   },
+// ),
+
+//             HeroCarousel(),
+//             // HeroCarousel(),
+
+
+//             Container(key: fundraiserKey, child: FundraiserCardList()),
+//             RaiseFundsSection(),
+//             Container(key: donationFormKey, child: DonationForm()),
+//             // DonationForm(),
+//             // Container(key: donationFormKey, child: FormImageSection()),
+//             // const DonationForm(),
+            
+//             Container(key: testimonialsKey, child: TestimonialSection()),
+//             Container(key: blogKey, child: BlogSection()),
+//             Container(key: aboutKey, child: Footer()),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+  // ... your existing code ...
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      endDrawer: MobileNavDrawer(
+        onLinkTap: (section) {
+          final lower = section.toLowerCase();
+          switch (lower) {
+            case 'donate':
+              scrollTo(donationFormKey);
+              break;
+            case 'fundraiser':
+              scrollTo(fundraiserKey);
+              break;
+            case 'testimonials':
+              scrollTo(testimonialsKey);
+              break;
+            case 'blogs':
+              scrollTo(blogKey);
+              break;
+            case 'about us':
+              scrollTo(aboutKey);
+              break;
+          }
+        },
+      ),
       body: SingleChildScrollView(
         controller: scrollController,
         child: Column(
           children: [
             Navbar(
-  onLinkTap: (section) {
-    final lower = section.toLowerCase();
-    switch (lower) {
-      case 'donate':
-        scrollTo(donationFormKey);
-        break;
-      case 'fundraiser':
-        scrollTo(fundraiserKey);
-        break;
-      case 'testimonials':
-        scrollTo(testimonialsKey);
-        break;
-      case 'blogs':
-        scrollTo(blogKey);
-        break;
-      case 'about us':
-        scrollTo(aboutKey);
-        break;
-    }
-  },
-),
-
-            HeroCarousel(),
-            // HeroCarousel(),
+              onLinkTap: (section) {
+                final lower = section.toLowerCase();
+                switch (lower) {
+                  case 'donate':
+                    scrollTo(donationFormKey);
+                    break;
+                  case 'fundraiser':
+                    scrollTo(fundraiserKey);
+                    break;
+                  case 'testimonials':
+                    scrollTo(testimonialsKey);
+                    break;
+                  case 'blogs':
+                    scrollTo(blogKey);
+                    break;
+                  case 'about us':
+                    scrollTo(aboutKey);
+                    break;
+                }
+              },
+            ),
+              HeroCarousel(),
+//             // HeroCarousel(),
 
 
             Container(key: fundraiserKey, child: FundraiserCardList()),
@@ -87,3 +160,5 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+

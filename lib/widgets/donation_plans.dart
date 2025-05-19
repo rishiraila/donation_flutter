@@ -13,7 +13,8 @@ const List<Map<String, dynamic>> fundraisers = [
   },
   {
     'image': 'assets/larm.jpg',
-    'title': 'Your donation can help 40 blind girls get food, shelter and care...',
+    'title':
+        'Your donation can help 40 blind girls get food, shelter and care...',
     'org': 'by Blind Welfare Society',
     'donations': '6324',
     'daysLeft': '2',
@@ -39,178 +40,219 @@ class FundraiserCardList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = (screenWidth - 64) / 3;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 32), // Top margin added
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Support a fundraiser',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Pick a cause close to your heart and donate now',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
-              ),
-            ],
+    int cardsPerRow;
+    if (screenWidth < 600) {
+      cardsPerRow = 1; // Mobile
+    } else if (screenWidth < 1024) {
+      cardsPerRow = 2; // Tablet
+    } else {
+      cardsPerRow = 3; // Desktop
+    }
+
+    final cardSpacing = 16.0;
+    final horizontalPadding = 32.0;
+    final totalSpacing = cardSpacing * (cardsPerRow - 1) + horizontalPadding;
+    final cardWidth = (screenWidth - totalSpacing) / cardsPerRow;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Support a fundraiser',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-        ),
-        SizedBox(
-          height: 420,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: fundraisers.map((fundraiser) {
-                return StatefulBuilder(
-                  builder: (context, setState) {
-                    bool isHovered = false;
+          const SizedBox(height: 4),
+          const Text(
+            'Pick a cause close to your heart and donate now',
+            style: TextStyle(fontSize: 16, color: Colors.black54),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: cardSpacing,
+            runSpacing: 20,
+            children:
+                fundraisers.map((fundraiser) {
+                  return SizedBox(
+                    width: cardWidth,
+                    child: FundraiserCard(fundraiser: fundraiser),
+                  );
+                }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                    return MouseRegion(
-                      onEnter: (_) => setState(() => isHovered = true),
-                      onExit: (_) => setState(() => isHovered = false),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        transform: isHovered
-                            ? (Matrix4.identity()..scale(1.03))
-                            : Matrix4.identity(),
-                        width: cardWidth,
-                        margin: const EdgeInsets.only(right: 16.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: isHovered ? 12 : 6,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+class FundraiserCard extends StatefulWidget {
+  final Map<String, dynamic> fundraiser;
+
+  const FundraiserCard({super.key, required this.fundraiser});
+
+  @override
+  State<FundraiserCard> createState() => _FundraiserCardState();
+}
+
+class _FundraiserCardState extends State<FundraiserCard> {
+  bool isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: isHovered ? 12 : 6,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: AnimatedScale(
+          scale: isHovered ? 1.03 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child: Image.asset(
+                        widget.fundraiser['image'],
+                        height: 160,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(16)),
-                                  child: Image.asset(
-                                    fundraiser['image'],
-                                    height: 160,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  left: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFE082),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'Tax Benefits Available',
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    fundraiser['title'],
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    fundraiser['org'],
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.black54),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.people,
-                                          size: 14, color: Colors.black45),
-                                      const SizedBox(width: 4),
-                                      Text('${fundraiser['donations']} Donations',
-                                          style: const TextStyle(fontSize: 12)),
-                                      const Spacer(),
-                                      const Icon(Icons.timer,
-                                          size: 14, color: Colors.black45),
-                                      const SizedBox(width: 4),
-                                      Text('${fundraiser['daysLeft']} Days Left',
-                                          style: const TextStyle(fontSize: 12)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  LinearProgressIndicator(
-                                    value: fundraiser['progress'],
-                                    backgroundColor: Colors.grey[300],
-                                    color: Colors.orange,
-                                    minHeight: 6,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '${fundraiser['raised']} raised of ${fundraiser['goal']}',
-                                    style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      onPressed: () {},
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      child: const Text('Donate Now'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFE082),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Tax Benefits Available',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    );
-                  },
-                );
-              }).toList(),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.fundraiser['title'],
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.fundraiser['org'],
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.people,
+                            size: 14,
+                            color: Colors.black45,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.fundraiser['donations']} Donations',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const Spacer(),
+                          const Icon(
+                            Icons.timer,
+                            size: 14,
+                            color: Colors.black45,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.fundraiser['daysLeft']} Days Left',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: widget.fundraiser['progress'],
+                        backgroundColor: Colors.grey[300],
+                        color: Colors.orange,
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${widget.fundraiser['raised']} raised of ${widget.fundraiser['goal']}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Donate Now'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

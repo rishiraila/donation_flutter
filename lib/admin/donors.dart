@@ -21,7 +21,9 @@ class _DonorsPageState extends State<DonorsPage> {
   }
 
   Future<void> fetchDonors() async {
-    final url = Uri.parse('https://backend-owxp.onrender.com/api/admin/unique-donor');
+    final url = Uri.parse(
+      'https://backend-owxp.onrender.com/api/admin/unique-donor',
+    );
     final response = await http.get(url);
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body);
@@ -68,70 +70,88 @@ class _DonorsPageState extends State<DonorsPage> {
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: Colors.white, // White background for dialog
             title: Text('Transactions of $name'),
-            content: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            content: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
               child:
                   txns.isEmpty
                       ? Text('No transactions found.')
-                      : DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Date')),
-                          DataColumn(label: Text('Amount')),
-                          DataColumn(label: Text('Txn ID')),
-                          DataColumn(label: Text('Name')),
-                          DataColumn(label: Text('Email')),
-                          DataColumn(label: Text('Status')),
-                        ],
-                        rows:
-                            txns.map((txn) {
-                              final isSuccess =
-                                  txn['status']?.toString().toLowerCase() ==
-                                  'success';
-                              final bgColor =
-                                  isSuccess
-                                      ? Colors.green.shade100
-                                      : Colors.red.shade100;
-                              final statusText =
-                                  isSuccess ? 'Success' : 'Failed Payment';
-                              return DataRow(
-                                color: MaterialStateProperty.all(bgColor),
-                                cells: [
-                                  DataCell(
-                                    Text(
-                                      txn['created_at']?.toString().split(
-                                            'T',
-                                          )[0] ??
-                                          '-',
-                                    ),
-                                  ),
-                                  DataCell(Text('₹${txn['amount'] ?? '-'}')),
-                                  DataCell(
-                                    Text(
-                                      txn['razorpay_payment_id']?.toString() ??
-                                          '-',
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Text(txn['name']?.toString() ?? '-'),
-                                  ),
-                                  DataCell(
-                                    Text(txn['email']?.toString() ?? '-'),
-                                  ),
-                                  DataCell(Text(statusText)),
-                                ],
-                              );
-                            }).toList(),
+                      : SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: const [
+                              DataColumn(label: Text('Date')),
+                              DataColumn(label: Text('Amount')),
+                              DataColumn(label: Text('Txn ID')),
+                              DataColumn(label: Text('Name')),
+                              DataColumn(label: Text('Email')),
+                              DataColumn(label: Text('Status')),
+                            ],
+                            rows:
+                                txns.map((txn) {
+                                  final isSuccess =
+                                      txn['status']?.toString().toLowerCase() ==
+                                      'success';
+                                  final bgColor =
+                                      isSuccess
+                                          ? Colors.green.shade100
+                                          : Colors.red.shade100;
+                                  final statusText =
+                                      isSuccess ? 'Success' : 'Failed Payment';
+                                  return DataRow(
+                                    color: MaterialStateProperty.all(bgColor),
+                                    cells: [
+                                      DataCell(
+                                        Text(
+                                          txn['created_at']?.toString().split(
+                                                'T',
+                                              )[0] ??
+                                              '-',
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text('₹${txn['amount'] ?? '-'}'),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          txn['razorpay_payment_id']
+                                                  ?.toString() ??
+                                              '-',
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(txn['name']?.toString() ?? '-'),
+                                      ),
+                                      DataCell(
+                                        Text(txn['email']?.toString() ?? '-'),
+                                      ),
+                                      DataCell(Text(statusText)),
+                                    ],
+                                  );
+                                }).toList(),
+                          ),
+                        ),
                       ),
             ),
             actions: [
               TextButton(
-  onPressed: () => exportTransactionsToExcel(name, mobile),
-  child: Text('Export Excel'),
-),
-
+                onPressed: () => exportTransactionsToExcel(name, mobile),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red, // Red text
+                ),
+                child: Text('Export Excel'),
+              ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red, // Red text
+                ),
                 child: Text('Close'),
               ),
             ],
@@ -147,18 +167,16 @@ class _DonorsPageState extends State<DonorsPage> {
       body: jsonEncode({
         "format": "excel",
         "data":
-            filtered
-                .map(
-                  (d) => {
-                    "id": d["id"],
-                    "name": d["name"],
-                    "mobile": d["mobile"],
-                    "amount": d["total_amount"],
-                    "donation_purpose": d["purpose"] ?? '',
-                    "created_at": d["last_donated"],
-                  },
-                )
-                .toList(),
+            filtered.map((d) {
+              return {
+                "id": d["id"],
+                "name": d["name"],
+                "mobile": d["mobile"],
+                "amount": d["total_amount"],
+                "donation_purpose": d["purpose"] ?? '',
+                "created_at": d["last_donated"],
+              };
+            }).toList(),
       }),
     );
 
@@ -176,165 +194,253 @@ class _DonorsPageState extends State<DonorsPage> {
   }
 
   void exportTransactionsToExcel(String name, String mobile) async {
-  final txns = transactions[mobile] ?? [];
-  final response = await http.post(
-    Uri.parse('https://backend-owxp.onrender.com/api/admin/export'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      "format": "excel",
-      "data": txns.map((txn) {
-        return {
-          "name": txn['name'],
-          "mobile": mobile,
-          "email": txn['email'],
-          "amount": txn['amount'],
-          "status": txn['status'],
-          "payment_id": txn['razorpay_payment_id'],
-          "date": txn['created_at'],
-        };
-      }).toList(),
-    }),
-  );
+    final txns = transactions[mobile] ?? [];
+    final response = await http.post(
+      Uri.parse('https://backend-owxp.onrender.com/api/admin/export'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "format": "excel",
+        "data":
+            txns.map((txn) {
+              return {
+                "name": txn['name'],
+                "mobile": mobile,
+                "email": txn['email'],
+                "amount": txn['amount'],
+                "status": txn['status'],
+                "payment_id": txn['razorpay_payment_id'],
+                "date": txn['created_at'],
+              };
+            }).toList(),
+      }),
+    );
 
-  if (response.statusCode == 200) {
-    final blob = html.Blob([response.bodyBytes]);
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    final anchor = html.AnchorElement(href: url)
-      ..setAttribute("download", "$name-transactions.xlsx")
-      ..click();
-    html.Url.revokeObjectUrl(url);
-  } else {
-    print("Failed to export transactions for $name");
+    if (response.statusCode == 200) {
+      final blob = html.Blob([response.bodyBytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor =
+          html.AnchorElement(href: url)
+            ..setAttribute("download", "$name-transactions.xlsx")
+            ..click();
+      html.Url.revokeObjectUrl(url);
+    } else {
+      print("Failed to export transactions for $name");
+    }
   }
-}
 
-
-  Widget buildDataTable() {
-    return DataTable(
-      columnSpacing: 30,
-      headingRowColor: WidgetStateProperty.all(Colors.blueGrey.shade50),
-      columns: [
-        DataColumn(
-          label: Text("Name", style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-        DataColumn(
-          label: Text("Mobile", style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-        DataColumn(
-          label: Text(
-            "Total Donated",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-        DataColumn(
-          label: Text(
-            "Transactions",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-        DataColumn(
-          label: Text("Action", style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-      ],
-      rows: List<DataRow>.generate(filtered.length, (index) {
-        final donor = filtered[index];
-        final mobile = donor['mobile'];
-        final donorTxns = transactions[mobile] ?? [];
-        final successTxns = donorTxns.where(
-          (t) => t['status']?.toString().toLowerCase() == 'success',
-        );
-        final totalAmount = successTxns.fold<double>(0, (sum, t) {
-          final amountRaw = t['amount'];
-          final amount =
-              amountRaw is String
-                  ? double.tryParse(amountRaw) ?? 0
-                  : (amountRaw ?? 0).toDouble();
-          return sum + amount;
-        });
-
-        final txnCount = donorTxns.length;
-
-        return DataRow(
-          color: MaterialStateProperty.all(
-            index % 2 == 0 ? Colors.white : Colors.grey.shade100,
-          ),
-          cells: [
-            DataCell(Text(donor['name'])),
-            DataCell(Text(mobile)),
-            DataCell(Text("₹$totalAmount")),
-            DataCell(Text("$txnCount")),
-            DataCell(
-              ElevatedButton(
-                onPressed: () => showTransactionDialog(donor['name'], mobile),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                ),
-                child: Text("View", style: TextStyle(color: Colors.white)),
+  Widget buildDataTable(BoxConstraints constraints) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: constraints.maxWidth),
+        child: DataTable(
+          columnSpacing: 30,
+          headingRowColor: WidgetStateProperty.all(Colors.blueGrey.shade50),
+          columns: [
+            DataColumn(
+              label: Text(
+                "Name",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                "Mobile",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                "Total Donated",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                "Transactions",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                "Action",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
-        );
-      }),
+          rows: List<DataRow>.generate(filtered.length, (index) {
+            final donor = filtered[index];
+            final mobile = donor['mobile'];
+            final donorTxns = transactions[mobile] ?? [];
+            final successTxns = donorTxns.where(
+              (t) => t['status']?.toString().toLowerCase() == 'success',
+            );
+            final totalAmount = successTxns.fold<double>(0, (sum, t) {
+              final amountRaw = t['amount'];
+              final amount =
+                  amountRaw is String
+                      ? double.tryParse(amountRaw) ?? 0
+                      : (amountRaw ?? 0).toDouble();
+              return sum + amount;
+            });
+
+            final txnCount = donorTxns.length;
+
+            return DataRow(
+              color: MaterialStateProperty.all(
+                index % 2 == 0 ? Colors.white : Colors.grey.shade100,
+              ),
+              cells: [
+                DataCell(Text(donor['name'])),
+                DataCell(Text(mobile)),
+                DataCell(Text("₹$totalAmount")),
+                DataCell(Text("$txnCount")),
+                DataCell(
+                  ElevatedButton(
+                    onPressed:
+                        () => showTransactionDialog(donor['name'], mobile),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade100,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: Text("View", style: TextStyle(color: Colors.red)),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+      ),
     );
   }
 
   @override
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(title: Text("Donors List")),
-    body: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                width: 300, // Adjust the width of the search bar as needed
-                child: TextField(
-                  decoration: InputDecoration(
-                    labelText: "Search by name",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.search),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LayoutBuilder(
+        builder:
+            (context, constraints) => Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  constraints.maxWidth > 600
+                      ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SizedBox(
+                            width: 300,
+                            child: Theme(
+                              data: Theme.of(
+                                context,
+                              ).copyWith(primaryColor: Colors.red),
+                              child: TextField(
+                                cursorColor: Colors.red,
+                                decoration: InputDecoration(
+                                  labelText: "Search by name",
+                                  labelStyle: TextStyle(color: Colors.grey),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.grey,
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors.red,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  border: UnderlineInputBorder(),
+                                ),
+                                onChanged: (value) {
+                                  searchQuery = value;
+                                  applyFilter();
+                                },
+                              ),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: exportToExcel,
+                            icon: Icon(Icons.file_download),
+                            label: Text("Export Excel"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      )
+                      : Row(
+                        children: [
+                          Expanded(
+                            child: Theme(
+                              data: Theme.of(
+                                context,
+                              ).copyWith(primaryColor: Colors.red),
+                              child: TextField(
+                                cursorColor: Colors.red,
+                                decoration: InputDecoration(
+                                  labelText: "Search by name",
+                                  labelStyle: TextStyle(color: Colors.grey),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.grey,
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors.red,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  border: UnderlineInputBorder(),
+                                ),
+                                onChanged: (value) {
+                                  searchQuery = value;
+                                  applyFilter();
+                                },
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: exportToExcel,
+                            icon: Icon(Icons.file_download),
+                            label: Text("Export Excel"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                  SizedBox(height: 16),
+                  Expanded(
+                    child:
+                        filtered.isEmpty
+                            ? Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.red,
+                              ),
+                            )
+                            : Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: buildDataTable(constraints),
+                              ),
+                            ),
                   ),
-                  onChanged: (value) {
-                    searchQuery = value;
-                    applyFilter();
-                  },
-                ),
+                ],
               ),
-              ElevatedButton.icon(
-                onPressed: exportToExcel,
-                icon: Icon(Icons.file_download),
-                label: Text("Export Excel"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          Expanded(
-            child: filtered.isEmpty
-                ? Center(child: CircularProgressIndicator())
-                : Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: buildDataTable(),
-                    ),
-                  ),
-          ),
-        ],
+            ),
       ),
-    ),
-  );
-}}
+    );
+  }
+}

@@ -79,16 +79,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final redAccent = Color(0xFFE31C25);
-
     return Scaffold(
       backgroundColor: Colors.red.shade50,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: IconThemeData(color: redAccent),
-
+        iconTheme: IconThemeData(color: Color(0xFFE31C25)),
         actions: [
           TextButton.icon(
             onPressed: () {
@@ -97,11 +93,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 MaterialPageRoute(builder: (context) => AdminAuthScreen()),
               );
             },
-            icon: Icon(Icons.admin_panel_settings, color: redAccent, size: 20),
+            icon: Icon(
+              Icons.admin_panel_settings,
+              color: Color(0xFFE31C25),
+              size: 20,
+            ),
             label: Text(
               "Admin Login",
               style: TextStyle(
-                color: redAccent,
+                color: Color(0xFFE31C25),
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -112,8 +112,119 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-      body:
-          isMobile ? _buildMobileLayout(context) : _buildDesktopLayout(context),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 800) {
+            // Mobile view
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/jaikishan.jpg',
+                      height: 220,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  _buildLoginForm(context, true),
+                ],
+              ),
+            );
+          } else {
+            // Desktop/tablet view
+            return Row(
+              children: [
+                // Left collage + text
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 500,
+                          height: 360,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Positioned(
+                                left: 40,
+                                top: 20,
+                                child: Transform.rotate(
+                                  angle: -0.08,
+                                  child: Container(
+                                    width: 260,
+                                    height: 180,
+                                    decoration: _imageBox(
+                                      'assets/jaikishan.jpg',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 160,
+                                top: 120,
+                                child: Transform.rotate(
+                                  angle: 0.05,
+                                  child: Container(
+                                    width: 260,
+                                    height: 180,
+                                    decoration: _imageBox('assets/larm.jpg'),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                          child: Text(
+                            "Every child deserves access to quality education and a brighter future. "
+                            "Your support helps us bring hope, technology, and opportunity to underserved communities.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.black87,
+                              height: 1.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Right login form
+                Expanded(
+                  flex: 1,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(32),
+                      child: _buildLoginForm(context, false),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  BoxDecoration _imageBox(String path) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(2, 2)),
+      ],
+      image: DecorationImage(image: AssetImage(path), fit: BoxFit.cover),
     );
   }
 
@@ -121,11 +232,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          Image.asset(
-            'assets/jaikishan.jpg',
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              'assets/jaikishan.jpg',
+              height: 220,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           ),
           SizedBox(height: 10),
           _buildLoginForm(context, true),
@@ -264,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-               color: Colors.red.shade500
+                color: Colors.red.shade500,
               ),
             ),
             SizedBox(height: 10),
@@ -277,11 +391,17 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: mobileController,
               keyboardType: TextInputType.phone,
+              cursorColor: Colors.red,
               decoration: InputDecoration(
                 labelText: "Mobile Number",
-                prefixIcon: Icon(Icons.phone),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+
+                labelStyle: TextStyle(color: Colors.black54),
+                prefixIcon: Icon(Icons.phone, color: Colors.red),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.red, width: 2),
                 ),
               ),
             ),
@@ -293,10 +413,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: Colors.red.shade100,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  _error,
-                  style: TextStyle(color: Colors.red.shade300),
-                ),
+                child: Text(_error, style: TextStyle(color: Colors.red)),
               ),
             SizedBox(height: 20),
             SizedBox(
@@ -304,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ElevatedButton(
                 onPressed: _loading ? null : checkMobileAndLogin,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:Colors.red.shade300,
+                  backgroundColor: Colors.red,
                   padding: EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

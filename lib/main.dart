@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Give.do Clone',
+      title: 'Give.do ',
       theme: ThemeData(primarySwatch: Colors.red),
       debugShowCheckedModeBanner: false,
       initialRoute: '/',

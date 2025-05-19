@@ -28,8 +28,24 @@ class _HeroCarouselState extends State<HeroCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
+    final screenWidth = MediaQuery.of(context).size.width;
+      double carouselHeight = screenWidth < 600
+        ? 200 // Mobile
+        : screenWidth < 1024
+            ? 300 // Tablet
+            : 400; // Desktop
+
+    double fontSize = screenWidth < 600
+        ? 16
+        : screenWidth < 1024
+            ? 20
+            : 24;
+      EdgeInsetsGeometry cardPadding = screenWidth < 600
+        ? EdgeInsets.all(10)
+        : EdgeInsets.symmetric(horizontal: 30);
+
+     return Container(
+      padding: cardPadding,
       color: Colors.red.shade50,
       child: Column(
         children: [
@@ -37,10 +53,10 @@ class _HeroCarouselState extends State<HeroCarousel> {
             itemCount: carouselItems.length,
             itemBuilder: (context, index, realIdx) {
               final item = carouselItems[index];
-              return buildCarouselCard(item['message']!, item['image']!);
+              return buildCarouselCard(item['message']!, item['image']!, fontSize);
             },
             options: CarouselOptions(
-              height: 340,
+              height: carouselHeight,
               enlargeCenterPage: true,
               autoPlay: true,
               autoPlayInterval: Duration(seconds: 5),
@@ -52,7 +68,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                 });
               },
             ),
-            carouselController: _controller, // ✅ Corrected to match expected type
+            carouselController: _controller,
           ),
           const SizedBox(height: 10),
           Row(
@@ -61,7 +77,9 @@ class _HeroCarouselState extends State<HeroCarousel> {
               IconButton(
                 icon: Icon(Icons.chevron_left, size: 32),
                 onPressed: () {
-                  _controller.previousPage(
+                  int previousIndex = (_currentIndex - 1 + carouselItems.length) % carouselItems.length;
+                  _controller.animateToPage(
+                    previousIndex,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
                   );
@@ -72,7 +90,9 @@ class _HeroCarouselState extends State<HeroCarousel> {
               IconButton(
                 icon: Icon(Icons.chevron_right, size: 32),
                 onPressed: () {
-                  _controller.nextPage(
+                  int nextIndex = (_currentIndex + 1) % carouselItems.length;
+                  _controller.animateToPage(
+                    nextIndex,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
                   );
@@ -86,13 +106,13 @@ class _HeroCarouselState extends State<HeroCarousel> {
     );
   }
 
-  Widget buildCarouselCard(String message, String imageUrl) {
+  Widget buildCarouselCard(String message, String imageUrl, double fontSize) {
   final bool isAssetImage = imageUrl.startsWith('assets/');
 
   return Container(
     margin: EdgeInsets.symmetric(horizontal: 8),
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(5),
       boxShadow: [
         BoxShadow(
           color: Colors.grey.withOpacity(0.4),
@@ -152,6 +172,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
+                     textStyle: TextStyle(fontSize: fontSize * 0.8),
                   ),
                 ),
               ],

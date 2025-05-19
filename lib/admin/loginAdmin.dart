@@ -17,6 +17,8 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
   bool _loading = false;
   String _error = '';
 
+  final Color redAccent = Color(0xFFE31C25);
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -87,7 +89,6 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final redAccent = Color(0xFFE31C25);
 
     return Scaffold(
       backgroundColor: Colors.red.shade50,
@@ -99,14 +100,6 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
           children: [
             Icon(Icons.admin_panel_settings, color: redAccent),
             SizedBox(width: 8),
-            // Text(
-            //   _isLogin ? "Admin Login" : "Admin Registration",
-            //   style: TextStyle(
-            //     color: redAccent,
-            //     fontSize: 20,
-            //     fontWeight: FontWeight.bold,
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -116,15 +109,22 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
 
   Widget _buildMobileLayout() {
     return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
       child: Column(
         children: [
-          Image.asset(
-            'assets/jaikishan.jpg',
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
+          Container(
+            
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/jaikishan.jpg',
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 12),
           _buildForm(true),
         ],
       ),
@@ -134,7 +134,6 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // Collage
         Expanded(
           flex: 1,
           child: Container(
@@ -220,7 +219,6 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
             ),
           ),
         ),
-        // Form
         Expanded(
           flex: 1,
           child: Center(child: _buildForm(false)),
@@ -230,7 +228,33 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
   }
 
   Widget _buildForm(bool isMobile) {
-    final redAccent = Color(0xFFE31C25);
+    InputDecoration inputDecoration(String label, IconData? icon) {
+      return InputDecoration(
+        labelText: label,
+        prefixIcon: icon != null ? Icon(icon, color: redAccent) : null,
+        labelStyle: TextStyle(color: Colors.black87),
+        border: InputBorder.none,
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.red, width: 1),
+        ),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.black, width: 1),
+        ),
+        contentPadding: EdgeInsets.symmetric(vertical: 10),
+      );
+    }
+
+    Widget underlineField({required Widget child}) {
+      return Container(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.shade400, width: 1),
+          ),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: child,
+      );
+    }
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(20),
@@ -261,56 +285,56 @@ class _AdminAuthScreenState extends State<AdminAuthScreen> {
                   color: redAccent,
                 ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               if (!_isLogin)
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
+                underlineField(
+                  child: TextFormField(
+                    controller: _nameController,
+                    cursorColor: redAccent,
+                    decoration: inputDecoration('Name', null),
+                    validator: (val) => val!.isEmpty ? 'Name required' : null,
                   ),
-                  validator: (val) =>
-                      val!.isEmpty ? 'Name required' : null,
                 ),
               if (!_isLogin) SizedBox(height: 20),
-              TextFormField(
-                controller: _mobileController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Mobile',
-                  prefixIcon: Icon(Icons.phone),
-                  border: OutlineInputBorder(),
+              underlineField(
+                child: TextFormField(
+                  controller: _mobileController,
+                  keyboardType: TextInputType.phone,
+                  cursorColor: redAccent,
+                  decoration: inputDecoration('Mobile', Icons.phone),
+                  validator: (val) =>
+                      val!.isEmpty ? 'Mobile number required' : null,
                 ),
-                validator: (val) =>
-                    val!.isEmpty ? 'Mobile number required' : null,
               ),
               SizedBox(height: 20),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
+              underlineField(
+                child: TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  cursorColor: redAccent,
+                  decoration: inputDecoration('Password', Icons.lock),
+                  validator: (val) =>
+                      val!.length < 6 ? 'Min 6 characters' : null,
                 ),
-                validator: (val) =>
-                    val!.length < 6 ? 'Min 6 characters' : null,
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 30),
               _loading
                   ? CircularProgressIndicator()
-                  : ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: redAccent,
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: redAccent,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                      ),
-                      onPressed: _submit,
-                      child: Text(
-                        _isLogin ? 'Login' : 'Register',
-                        style: TextStyle(color: Colors.white),
+                        onPressed: _submit,
+                        child: Text(
+                          _isLogin ? 'Login' : 'Register',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ),
               TextButton(

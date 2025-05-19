@@ -1,4 +1,3 @@
-// navbar.dart
 import 'package:flutter/material.dart';
 
 class Navbar extends StatelessWidget {
@@ -12,9 +11,10 @@ class Navbar extends StatelessWidget {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: screenWidth < 800
-          ? _buildMobileNavbar(context)
-          : _buildDesktopNavbar(context),
+      child:
+          screenWidth < 800
+              ? _buildMobileNavbar(context)
+              : _buildDesktopNavbar(context),
     );
   }
 
@@ -45,7 +45,10 @@ class Navbar extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
@@ -88,14 +91,100 @@ class Navbar extends StatelessWidget {
           ),
         ),
         Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black),
-            onPressed: () {
-              Scaffold.of(context).openEndDrawer();
-            },
-          ),
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.black),
+                onPressed: () {
+                  Scaffold.of(context).openEndDrawer();
+                },
+              ),
         ),
       ],
     );
   }
+}
+
+class MobileNavDrawer extends StatelessWidget {
+  final Function(String)? onLinkTap;
+  const MobileNavDrawer({super.key, this.onLinkTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Top branding
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Row(
+                children: [
+                  // Replace with your actual logo
+                    const CircleAvatar(
+                      radius: 20,
+                      backgroundImage: AssetImage('../../assets/andrej.jpg'),
+                    ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'give',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Navigation links
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                children: [
+                  _drawerNavItem(context, 'Donate'),
+                  _drawerNavItem(context, 'Fundraiser'),
+                  _drawerNavItem(context, 'Testimonials'),
+                  _drawerNavItem(context, 'Blogs'),
+                  _drawerNavItem(context, 'About Us'),
+                   const SizedBox(height: 20),
+
+            // Login button (immediately after navigation links)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.pushNamed(context, '/login');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: const Text('Login'),
+            ),
+                ],
+              ),
+            ),
+            
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerNavItem(BuildContext context, String title) {
+    return ListTile(
+      title: Text(title, style: const TextStyle(fontSize: 18)),
+      onTap: () {
+        Navigator.pop(context); // Close drawer
+        if (onLinkTap != null) {
+          onLinkTap!(title);
+        }
+      },
+    );
+  }
+
 }

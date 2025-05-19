@@ -11,8 +11,14 @@ class DonationForm extends StatefulWidget {
 }
 
 class _DonationFormState extends State<DonationForm> {
+  String? selectedPurpose;
+  TextEditingController otherPurposeController = TextEditingController();
+
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
+
   late Razorpay _razorpay;
+  bool _isLoading = false;
 
   TextEditingController nameController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
@@ -61,15 +67,23 @@ class _DonationFormState extends State<DonationForm> {
     };
 
     final responseApi = await http.post(
-      Uri.parse("https://backend-owxp.onrender.com/api/donations/verify-payment"),
+      Uri.parse(
+        "https://backend-owxp.onrender.com/api/donations/verify-payment",
+      ),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(data),
     );
 
     if (responseApi.statusCode == 200) {
-      _showDialog("Success", "Thank you for your donation of ₹${amountController.text}!");
+      _showDialog(
+        "Success",
+        "Thank you for your donation of ₹${amountController.text}!",
+      );
     } else {
-      _showDialog("Error", "Payment was successful but storing donation failed.");
+      _showDialog(
+        "Error",
+        "Payment was successful but storing donation failed.",
+      );
     }
   }
 
@@ -83,41 +97,56 @@ class _DonationFormState extends State<DonationForm> {
 
   Future<void> createOrder() async {
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true); // Show loader
+    try {
+      // Create order on the server
+      final response = await http.post(
+        Uri.parse(
+          "https://backend-owxp.onrender.com/api/donations/create-order",
+        ),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": nameController.text,
+          "mobile": mobileController.text,
+          "amount": amountController.text,
+          "donation_purpose":
+              selectedPurpose == "Other"
+                  ? otherPurposeController.text
+                  : selectedPurpose,
 
-    final response = await http.post(
-      Uri.parse("https://backend-owxp.onrender.com/api/donations/create-order"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "name": nameController.text,
-        "mobile": mobileController.text,
-        "amount": amountController.text,
-        "donation_purpose": purposeController.text,
-        "address": addressController.text,
-        "area": areaController.text,
-        "city": cityController.text,
-        "pincode": pincodeController.text,
-        "document_type": selectedDocumentType,
-        "document_number": documentNumberController.text,
-        "email": emailController.text,
-      }),
-    );
+          "address": addressController.text,
+          "area": areaController.text,
+          "city": cityController.text,
+          "pincode": pincodeController.text,
+          "document_type": selectedDocumentType,
+          "document_number": documentNumberController.text,
+          "email": emailController.text,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data["order"]?["id"] != null) {
-        orderId = data["order"]["id"];
-        openCheckout();
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data["order"]?["id"] != null) {
+          orderId = data["order"]["id"];
+          openCheckout();
+        } else {
+          _showDialog("Error", "Order ID not found.");
+          setState(() => _isLoading = false); // Hide loader on error
+        }
       } else {
-        _showDialog("Error", "Order ID not found.");
+        _showDialog("Error", "Order creation failed.");
+        setState(() => _isLoading = false); // Hide loader on error
       }
-    } else {
-      _showDialog("Error", "Order creation failed.");
+    } catch (e) {
+      _showDialog("Error", "Something went wrong.");
+      setState(() => _isLoading = false); // Hide loader on exception
     }
   }
 
   void openCheckout() {
     if (orderId == null || orderId!.isEmpty) {
       _showDialog("Error", "Order ID is missing.");
+      setState(() => _isLoading = false); // Hide loader
       return;
     }
 
@@ -133,131 +162,419 @@ class _DonationFormState extends State<DonationForm> {
       },
       "external": {
         "wallets": ["paytm"],
-      }
+      },
     });
+    setState(() => _isLoading = false); // Hide loader
   }
 
   void _showDialog(String title, String msg) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        content: Text(msg),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))],
-      ),
+      builder:
+          (_) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: Text(title, style: const TextStyle(color: Colors.black)),
+            content: Text(msg, style: const TextStyle(color: Colors.black87)),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+
+                  if (title == "Success") {
+                    _formKey.currentState?.reset(); // Reset form state
+                    nameController.clear();
+                    mobileController.clear();
+                    emailController.clear();
+                    amountController.clear();
+                    selectedPurpose = null;
+                    otherPurposeController.clear();
+
+                    addressController.clear();
+                    areaController.clear();
+                    cityController.clear();
+                    pincodeController.clear();
+                    documentNumberController.clear();
+                    setState(() {
+                      selectedDocumentType = "Aadhar"; // Reset dropdown
+                    });
+
+                    // Scroll to top
+                    _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                    );
+
+                    // Show snackbar
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Donation submitted successfully!"),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                child: const Text("OK", style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
     );
   }
 
-  Widget _buildField(TextEditingController controller, String label,
-      {TextInputType inputType = TextInputType.text}) {
+  Widget _buildField(
+    TextEditingController controller,
+    String label, {
+    TextInputType inputType = TextInputType.text,
+  }) {
     return SizedBox(
       width: 300,
       child: TextFormField(
         controller: controller,
         keyboardType: inputType,
+        cursorColor: Colors.red,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(),
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          labelStyle: const TextStyle(color: Colors.black),
+          enabledBorder: const UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.black, width: 1),
+          ),
+          focusedBorder: const UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.redAccent, width: 1),
+          ),
         ),
-        validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+        style: const TextStyle(color: Colors.black),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) return 'Required';
+
+          final trimmed = value.trim();
+
+          // Custom validations based on label
+          switch (label) {
+            case "Name":
+              if (!RegExp(r"^[a-zA-Z\s]+$").hasMatch(trimmed))
+                return 'Only letters allowed';
+              break;
+            case "Amount":
+              if (!RegExp(r"^\d+(\.\d{1,2})?$").hasMatch(trimmed))
+                return 'Enter a valid amount';
+              break;
+            case "Phone":
+              if (!RegExp(r"^\d{10}$").hasMatch(trimmed))
+                return 'Enter a 10-digit phone number';
+              break;
+            case "Email":
+              if (!RegExp(
+                r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
+              ).hasMatch(trimmed))
+                return 'Enter a valid email';
+              break;
+            case "Pincode":
+              if (!RegExp(r"^\d{6}$").hasMatch(trimmed))
+                return 'Enter a valid 6-digit pincode';
+              break;
+            case "Document Number":
+              if (selectedDocumentType == "Aadhar" &&
+                  !RegExp(r"^\d{12}$").hasMatch(trimmed)) {
+                return 'Enter a valid 12-digit Aadhar number';
+              } else if (selectedDocumentType == "PAN" &&
+                  !RegExp(r"^[A-Z]{5}[0-9]{4}[A-Z]$").hasMatch(trimmed)) {
+                return 'Invalid PAN format';
+              } else if (selectedDocumentType == "Passport" &&
+                  !RegExp(r"^[A-PR-WY][0-9]{7}$").hasMatch(trimmed)) {
+                return 'Invalid Passport format';
+              }
+              break;
+          }
+
+          return null;
+        },
       ),
     );
   }
 
- @override
-Widget build(BuildContext context) {
-  return Center(
-    child: Container(
-      width: 1200,
-      margin: const EdgeInsets.symmetric(vertical: 40),
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image (resized)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              'assets/jaikishan.jpg',
-              height: 340,
-              width: 300,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 40),
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth <= 800;
 
-          // Form Section
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '“The meaning of life is to find your gift. The purpose of life is to give it away.”',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.teal),
-                ),
-                const SizedBox(height: 24),
-                Form(
-                  key: _formKey,
-                  child: Wrap(
-                    spacing: 24,
-                    runSpacing: 18,
-                    children: [
-                      _buildField(nameController, "Name"),
-                      _buildField(amountController, "Amount", inputType: TextInputType.number),
-                      _buildField(mobileController, "Phone", inputType: TextInputType.phone),
-                      _buildField(emailController, "Email", inputType: TextInputType.emailAddress),
-                      _buildField(purposeController, "Purpose"),
-                      _buildField(addressController, "Address"),
-                      _buildField(areaController, "Area"),
-                      _buildField(cityController, "City"),
-                      _buildField(pincodeController, "Pincode", inputType: TextInputType.number),
-                      SizedBox(
-                        width: 300,
-                        child: DropdownButtonFormField<String>(
-                          value: selectedDocumentType,
-                          decoration: const InputDecoration(
-                            labelText: "Document Type",
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          ),
-                          items: ["Aadhar", "PAN", "Passport"].map((doc) {
-                            return DropdownMenuItem(value: doc, child: Text(doc));
-                          }).toList(),
-                          onChanged: (value) => setState(() => selectedDocumentType = value),
-                          validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                        ),
-                      ),
-                      _buildField(documentNumberController, "Document Number"),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: createOrder,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
-                  ),
-                  child: const Text(
-                    'Donate',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                ),
+        return Center(
+          child: Container(
+            width: isMobile ? double.infinity : 1200,
+            margin: const EdgeInsets.symmetric(vertical: 40),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(color: Colors.grey.shade200, blurRadius: 10),
               ],
             ),
+            child:
+                isMobile
+                    ? Column(
+                      // ⬅️ Mobile view: stack vertically
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildImage(),
+                        const SizedBox(height: 24),
+                        _buildFormSection(isMobile: true),
+                      ],
+                    )
+                    : Row(
+                      // ⬅️ Desktop view: side by side
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildImage(),
+                        const SizedBox(width: 40),
+                        Expanded(child: _buildFormSection(isMobile: false)),
+                      ],
+                    ),
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildImage() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.asset(
+        'assets/jaikishan.jpg',
+        height: 300,
+        width: 300,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+Widget _buildPurposeDropdown(bool isMobile) {
+  final purposes = ["Food", "Clothes", "Education", "Charity", "Other"];
+
+  return GestureDetector(
+    onTap: () => _showPurposePopup(isMobile),
+    child: InputDecorator(
+      decoration: const InputDecoration(
+        labelText: "Purpose",
+        labelStyle: TextStyle(color: Colors.black),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.black, width: 1),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.redAccent, width: 1),
+        ),
+      ),
+      child: Text(
+        selectedPurpose == null
+            ? 'Select Purpose'
+            : (selectedPurpose == "Other"
+                ? (otherPurposeController.text.isEmpty
+                    ? "Other"
+                    : "Other - ${otherPurposeController.text}")
+                : selectedPurpose!),
+        style: const TextStyle(color: Colors.black),
       ),
     ),
   );
 }
+void _showPurposePopup(bool isMobile) {
+  final purposes = ["Food", "Clothes", "Education", "Charity", "Other"];
+  String? tempSelected = selectedPurpose;
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Theme(
+        data: Theme.of(context).copyWith(
+          dialogBackgroundColor: Colors.white,
+          colorScheme: const ColorScheme.light(
+            primary: Colors.red,
+            onPrimary: Colors.white,
+            onSurface: Colors.black,
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ),
+        child: AlertDialog(
+          title: const Text("Select Purpose"),
+          content: StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return SizedBox(
+                width: isMobile ? double.infinity : 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...purposes.map((p) {
+                      return ListTile(
+                        title: Text(p),
+                        leading: Radio<String>(
+                          value: p,
+                          groupValue: tempSelected,
+                          activeColor: Colors.red,
+                          onChanged: (value) {
+                            setStateDialog(() {
+                              tempSelected = value!;
+                            });
+                            if (value != "Other") {
+                              Navigator.pop(context);
+                              setState(() => selectedPurpose = value!);
+                            }
+                          },
+                        ),
+                        onTap: () {
+                          setStateDialog(() {
+                            tempSelected = p;
+                          });
+                          if (p != "Other") {
+                            Navigator.pop(context);
+                            setState(() => selectedPurpose = p);
+                          }
+                        },
+                      );
+                    }).toList(),
+                    if (tempSelected == "Other")
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: TextFormField(
+                          controller: otherPurposeController,
+                          autofocus: true,
+                          style: const TextStyle(color: Colors.black),
+                          cursorColor: Colors.red,
+                          decoration: const InputDecoration(
+                            hintText: "Enter custom purpose",
+                            hintStyle: TextStyle(fontSize: 14),
+                            isDense: true,
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.red),
+                            ),
+                          ),
+                          onFieldSubmitted: (value) {
+                            if (value.trim().isNotEmpty) {
+                              setState(() {
+                                selectedPurpose = value.trim();
+                              });
+                              Navigator.pop(context);
+                            }
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+
+
+  Widget _buildFormSection({required bool isMobile}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '“The meaning of life is to find your gift. The purpose of life is to give it away.”',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.red,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Form(
+          key: _formKey,
+          child: Wrap(
+            spacing: 20,
+            runSpacing: 8,
+            children: [
+              for (var field in [
+                _buildField(nameController, "Name"),
+                _buildField(
+                  amountController,
+                  "Amount",
+                  inputType: TextInputType.number,
+                ),
+                _buildField(
+                  mobileController,
+                  "Phone",
+                  inputType: TextInputType.phone,
+                ),
+                _buildField(
+                  emailController,
+                  "Email",
+                  inputType: TextInputType.emailAddress,
+                ),
+                _buildPurposeDropdown(isMobile),
+                if (selectedPurpose == "Other")
+                  SizedBox(
+                    width: isMobile ? double.infinity : 300,
+                    child: _buildField(otherPurposeController, "Other Purpose"),
+                  ),
+
+                _buildField(addressController, "Address"),
+                _buildField(areaController, "Area"),
+                _buildField(cityController, "City"),
+                _buildField(
+                  pincodeController,
+                  "Pincode",
+                  inputType: TextInputType.number,
+                ),
+                _buildDropdown(), // for Document Type
+                _buildField(documentNumberController, "Document Number"),
+              ])
+                SizedBox(width: isMobile ? double.infinity : 300, child: field),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        _isLoading
+            ? const CircularProgressIndicator(color: Colors.red)
+            : ElevatedButton(
+              onPressed: _isLoading ? null : createOrder,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 36,
+                  vertical: 16,
+                ),
+              ),
+              child: const Text(
+                'Donate',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown() {
+    return DropdownButtonFormField<String>(
+      value: selectedDocumentType,
+      decoration: const InputDecoration(
+        labelText: "Document Type",
+        labelStyle: TextStyle(color: Colors.black),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.black, width: 1),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.redAccent, width: 1),
+        ),
+      ),
+      items:
+          ["Aadhar", "PAN", "Passport"].map((doc) {
+            return DropdownMenuItem(value: doc, child: Text(doc));
+          }).toList(),
+      onChanged: (value) => setState(() => selectedDocumentType = value),
+      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+    );
+  }
 }
